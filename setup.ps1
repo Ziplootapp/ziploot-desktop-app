@@ -4,6 +4,9 @@ Write-Host "============================================================" -Foreg
 
 $AppUrl = Read-Host "Enter your Target Website URL (default: https://ziploot.app)"
 if ([string]::IsNullOrWhiteSpace($AppUrl)) { $AppUrl = "https://ziploot.app" }
+if (-not ($AppUrl.StartsWith("http://") -or $AppUrl.StartsWith("https://"))) {
+    $AppUrl = "https://" + $AppUrl
+}
 
 $AppName = Read-Host "Enter your Desktop App Name (default: ZipLoot Desktop)"
 if ([string]::IsNullOrWhiteSpace($AppName)) { $AppName = "ZipLoot Desktop" }
@@ -11,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($AppName)) { $AppName = "ZipLoot Desktop" }
 $AppId = Read-Host "Enter Bundle Identifier (default: app.ziploot.desktop)"
 if ([string]::IsNullOrWhiteSpace($AppId)) { $AppId = "app.ziploot.desktop" }
 
-Write-Host "`n[1/3] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
+Write-Host "`n[1/4] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
 
 $jsonContent = @"
 {
@@ -48,15 +51,18 @@ $jsonContent = @"
 
 Set-Content -Path "src-tauri/tauri.conf.json" -Value $jsonContent -Encoding UTF8
 
-Write-Host "[2/3] Verifying build.rs script..." -ForegroundColor Yellow
+Write-Host "[2/4] Verifying build.rs script..." -ForegroundColor Yellow
 $buildRsContent = 'fn main() { tauri_build::build(); }'
 Set-Content -Path "src-tauri/build.rs" -Value $buildRsContent -Encoding UTF8
 
-Write-Host "[3/3] Ready for 1-Click GitHub Actions Build!" -ForegroundColor Green
+Write-Host "[3/4] Auto-Committing and Pushing to GitHub..." -ForegroundColor Yellow
+git add .
+git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)"
+git push origin main
+
+Write-Host "`n[4/4] SUCCESS! Cloud Build Triggered!" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "SUCCESS! Your Tauri desktop project is fully configured." -ForegroundColor Green
-Write-Host "Next Step: Commit and push to GitHub to generate your .exe file!" -ForegroundColor Yellow
-Write-Host "  git add ." -ForegroundColor White
-Write-Host "  git commit -m 'Configure desktop build'" -ForegroundColor White
-Write-Host "  git push origin main" -ForegroundColor White
+Write-Host "🎉 GitHub Actions is now compiling your $AppName .exe in Microsoft Cloud!" -ForegroundColor Green
+Write-Host "Track your live build & download your .exe artifact here:" -ForegroundColor Yellow
+Write-Host "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor Cyan
