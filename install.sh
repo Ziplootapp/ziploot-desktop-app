@@ -18,6 +18,8 @@ APP_NAME=${APP_NAME:-ZipLoot Desktop}
 read -p "Enter Bundle Identifier (default: app.ziploot.desktop): " APP_ID
 APP_ID=${APP_ID:-app.ziploot.desktop}
 
+echo -e "\n[1/3] Generating src-tauri/tauri.conf.json..."
+
 cat <<EOF > src-tauri/tauri.conf.json
 {
   "\$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
@@ -51,28 +53,25 @@ cat <<EOF > src-tauri/tauri.conf.json
 }
 EOF
 
+echo "[2/3] Verifying build.rs script..."
 cat <<EOF > src-tauri/build.rs
 fn main() {
     tauri_build::build();
 }
 EOF
 
-if [ -d ".git" ]; then
-    git add .
-    git commit -m "Automated 1-Click Tauri Build for ${APP_NAME} (${APP_URL})"
-    git push origin main
-    echo "============================================================"
-    echo "🎉 SUCCESS! Cloud Build Triggered!"
-    echo "Track live build & download your executable artifact here:"
-    echo "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions"
-    echo "============================================================"
-else
-    echo "============================================================"
-    echo "🎉 Project configured successfully!"
-    echo "To trigger GitHub Actions build, push this folder to your GitHub repo:"
-    echo "  git init"
-    echo "  git add ."
-    echo "  git commit -m 'Configure desktop build'"
-    echo "  git push -u origin main"
-    echo "============================================================"
+echo "[3/3] Auto-Initializing Git & Committing Project..."
+if [ ! -d ".git" ]; then
+    git init -q
 fi
+
+git add .
+git commit -m "Automated 1-Click Tauri Build for ${APP_NAME} (${APP_URL})" -q
+
+if git remote get-url origin > /dev/null 2>&1; then
+    git push origin main
+fi
+
+echo "============================================================"
+echo "🎉 SUCCESS! Your Desktop App Project is Fully Configured!"
+echo "============================================================"
