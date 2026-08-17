@@ -70,7 +70,7 @@ MODE=${MODE:-1}
 if [ "$MODE" = "2" ]; then
     read -p "Enter your GitHub Username: " GH_USER
     read -p "Enter your GitHub Repo Name (e.g. my-desktop-app): " GH_REPO
-    read -p "Enter your GitHub PAT Token (ghp_xxxx...): " GH_PAT
+    read -p "Enter your GitHub PAT Token or Password: " GH_PAT
 
     if [ ! -d ".git" ]; then
         git init -q
