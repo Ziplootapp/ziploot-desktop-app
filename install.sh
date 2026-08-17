@@ -68,26 +68,32 @@ read -p "Enter Choice [1 or 2] (default: 1): " MODE
 MODE=${MODE:-1}
 
 if [ "$MODE" = "2" ]; then
-    read -p "Enter your GitHub Email: " USER_EMAIL
-    read -p "Enter your GitHub Name/Username: " USER_NAME
-    read -p "Enter your GitHub Repository URL: " REPO_URL
+    read -p "Enter your GitHub Username: " GH_USER
+    read -p "Enter your GitHub Repo Name (e.g. my-desktop-app): " GH_REPO
+    read -p "Enter your GitHub PAT Token (ghp_xxxx...): " GH_PAT
 
     if [ ! -d ".git" ]; then
         git init -q
     fi
 
-    if [ -n "$USER_EMAIL" ]; then git config user.email "$USER_EMAIL"; fi
-    if [ -n "$USER_NAME" ]; then git config user.name "$USER_NAME"; fi
+    if [ -n "$GH_USER" ]; then
+        git config user.name "$GH_USER"
+        git config user.email "$GH_USER@users.noreply.github.com"
+    fi
 
     git add .
     git commit -m "Automated Tauri Build for ${APP_NAME} (${APP_URL})" -q
 
-    if [ -n "$REPO_URL" ]; then
+    if [ -n "$GH_USER" ] && [ -n "$GH_REPO" ] && [ -n "$GH_PAT" ]; then
+        AUTH_URL="https://${GH_PAT}@github.com/${GH_USER}/${GH_REPO}.git"
         git remote remove origin > /dev/null 2>&1
-        git remote add origin "$REPO_URL"
+        git remote add origin "$AUTH_URL"
+        git branch -M main > /dev/null 2>&1
         git push -u origin main
         echo "============================================================"
         echo "🎉 SUCCESS! Cloud Build Triggered on GitHub!"
+        echo "Track live build & download your .exe artifact here:"
+        echo "👉 https://github.com/${GH_USER}/${GH_REPO}/actions"
         echo "============================================================"
     fi
 else
