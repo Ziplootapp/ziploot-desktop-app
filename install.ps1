@@ -1,7 +1,7 @@
 Set-Location -Path $PSScriptRoot
 
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "   ZipLoot Automated Web-to-Desktop App Builder (Tauri v2)  " -ForegroundColor Green
+Write-Host "   ZipLoot Web-to-Desktop App Builder (Tauri v2) Auto-Installer  " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Cyan
 
 $AppUrl = Read-Host "Enter your Target Website URL (default: https://ziploot.app)"
@@ -73,6 +73,6 @@ if ($remote) {
 $currentDir = (Get-Item .).FullName
 
 Write-Host "`n============================================================" -ForegroundColor Cyan
-Write-Host "🎉 SUCCESS! Your Desktop App Project is Fully Configured!" -ForegroundColor Green
-Write-Host "📁 Project Directory: $currentDir" -ForegroundColor Yellow
+Write-Host "SUCCESS! Your Desktop App Project is Fully Configured!" -ForegroundColor Green
+Write-Host "Project Directory: $currentDir" -ForegroundColor Yellow
 Write-Host "============================================================" -ForegroundColor Cyan
