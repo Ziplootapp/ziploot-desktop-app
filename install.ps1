@@ -69,7 +69,7 @@ if ($mode -eq "2") {
     Write-Host "`n[GitHub PAT Token & Auto-Deploy Setup]" -ForegroundColor Yellow
     $ghUser = Read-Host "Enter your GitHub Username"
     $ghRepo = Read-Host "Enter your GitHub Repo Name (e.g. my-desktop-app)"
-    $ghPat  = Read-Host "Enter your GitHub PAT Token (ghp_xxxx...)"
+    $ghPat  = Read-Host "Enter your GitHub Personal Access Token (PAT) or Password"
 
     if (-not (Test-Path ".git")) {
         git init -q
