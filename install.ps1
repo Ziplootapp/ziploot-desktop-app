@@ -16,7 +16,7 @@ if ([string]::IsNullOrWhiteSpace($AppName)) { $AppName = "ZipLoot Desktop" }
 $AppId = Read-Host "Enter Bundle Identifier (default: app.ziploot.desktop)"
 if ([string]::IsNullOrWhiteSpace($AppId)) { $AppId = "app.ziploot.desktop" }
 
-Write-Host "`n[1/3] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
+Write-Host "`n[1/2] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
 
 $jsonContent = @"
 {
@@ -53,33 +53,53 @@ $jsonContent = @"
 
 Set-Content -Path "src-tauri/tauri.conf.json" -Value $jsonContent -Encoding UTF8
 
-Write-Host "[2/3] Verifying build.rs script..." -ForegroundColor Yellow
+Write-Host "[2/2] Verifying build.rs script..." -ForegroundColor Yellow
 $buildRsContent = 'fn main() { tauri_build::build(); }'
 Set-Content -Path "src-tauri/build.rs" -Value $buildRsContent -Encoding UTF8
 
-Write-Host "[3/3] Auto-Initializing Git & Committing Project..." -ForegroundColor Yellow
-if (-not (Test-Path ".git")) {
-    git init -q
-}
-
-# Auto-set git fallback identity if missing
-$gitEmail = git config user.email 2>$null
-if (-not $gitEmail) {
-    git config user.email "developer@ziploot.app"
-    git config user.name "ZipLoot Developer"
-}
-
-git add .
-git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)" -q
-
-$remote = git remote get-url origin 2>$null
-if ($remote) {
-    git push origin main
-}
+Write-Host "`n------------------------------------------------------------" -ForegroundColor Cyan
+Write-Host "Select Build Mode:" -ForegroundColor Yellow
+Write-Host "  [1] Save Project Files Locally on PC (Offline Mode)" -ForegroundColor White
+Write-Host "  [2] Auto-Push to GitHub & Trigger Cloud .exe Build" -ForegroundColor White
+$mode = Read-Host "Enter Choice [1 or 2] (default: 1)"
 
 $currentDir = (Get-Item .).FullName
 
-Write-Host "`n============================================================" -ForegroundColor Cyan
-Write-Host "SUCCESS! Your Desktop App Project is Fully Configured!" -ForegroundColor Green
-Write-Host "Project Directory: $currentDir" -ForegroundColor Yellow
-Write-Host "============================================================" -ForegroundColor Cyan
+if ($mode -eq "2") {
+    Write-Host "`n[GitHub Deployment Setup]" -ForegroundColor Yellow
+    $userEmail = Read-Host "Enter your GitHub Email"
+    $userName = Read-Host "Enter your GitHub Name/Username"
+    $repoUrl = Read-Host "Enter your GitHub Repository URL (e.g. https://github.com/username/repo.git)"
+
+    if (-not (Test-Path ".git")) {
+        git init -q
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($userEmail)) { git config user.email "$userEmail" }
+    if (-not [string]::IsNullOrWhiteSpace($userName)) { git config user.name "$userName" }
+
+    git add .
+    git commit -m "Automated Tauri Build for $AppName ($AppUrl)" -q
+
+    if (-not [string]::IsNullOrWhiteSpace($repoUrl)) {
+        git remote remove origin 2>$null
+        git remote add origin "$repoUrl"
+        git push -u origin main
+        Write-Host "`n============================================================" -ForegroundColor Cyan
+        Write-Host "SUCCESS! Cloud Build Triggered!" -ForegroundColor Green
+        Write-Host "Track live build & download your .exe artifact on GitHub Actions!" -ForegroundColor Yellow
+        Write-Host "============================================================" -ForegroundColor Cyan
+    } else {
+        Write-Host "`n============================================================" -ForegroundColor Cyan
+        Write-Host "SUCCESS! Local Git Commit Prepared!" -ForegroundColor Green
+        Write-Host "Project Directory: $currentDir" -ForegroundColor Yellow
+        Write-Host "============================================================" -ForegroundColor Cyan
+    }
+} else {
+    Write-Host "`n============================================================" -ForegroundColor Cyan
+    Write-Host "SUCCESS! Project Files Saved Locally on your PC!" -ForegroundColor Green
+    Write-Host "Project Directory: $currentDir" -ForegroundColor Yellow
+    Write-Host "============================================================" -ForegroundColor Cyan
+}
+
+explorer.exe $currentDir
