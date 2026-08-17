@@ -1,7 +1,7 @@
 Set-Location -Path $PSScriptRoot
 
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "   ZipLoot Web-to-Desktop App Builder (Tauri v2) Auto-Installer  " -ForegroundColor Green
+Write-Host "   ZipLoot Automated Web-to-Desktop App Builder (Tauri v2)  " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Cyan
 
 $AppUrl = Read-Host "Enter your Target Website URL (default: https://ziploot.app)"
@@ -57,24 +57,22 @@ Write-Host "[2/3] Verifying build.rs script..." -ForegroundColor Yellow
 $buildRsContent = 'fn main() { tauri_build::build(); }'
 Set-Content -Path "src-tauri/build.rs" -Value $buildRsContent -Encoding UTF8
 
-Write-Host "[3/3] Checking Git Repository status..." -ForegroundColor Yellow
-if (Test-Path ".git") {
-    git add .
-    git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)"
-    git push origin main
-    Write-Host "`n============================================================" -ForegroundColor Cyan
-    Write-Host "🎉 SUCCESS! Cloud Build Triggered!" -ForegroundColor Green
-    Write-Host "GitHub Actions is now compiling your $AppName .exe in Microsoft Cloud!" -ForegroundColor Yellow
-    Write-Host "Track live build & download your .exe artifact here:" -ForegroundColor White
-    Write-Host "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions" -ForegroundColor Cyan
-    Write-Host "============================================================" -ForegroundColor Cyan
-} else {
-    Write-Host "`n============================================================" -ForegroundColor Cyan
-    Write-Host "🎉 Project configured successfully!" -ForegroundColor Green
-    Write-Host "To trigger GitHub Actions build, push this folder to your GitHub repo:" -ForegroundColor Yellow
-    Write-Host "  git init" -ForegroundColor White
-    Write-Host "  git add ." -ForegroundColor White
-    Write-Host "  git commit -m 'Configure desktop build'" -ForegroundColor White
-    Write-Host "  git push -u origin main" -ForegroundColor White
-    Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "[3/3] Auto-Initializing Git & Committing Project..." -ForegroundColor Yellow
+if (-not (Test-Path ".git")) {
+    git init -q
 }
+
+git add .
+git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)" -q
+
+$remote = git remote get-url origin 2>$null
+if ($remote) {
+    git push origin main
+}
+
+$currentDir = (Get-Item .).FullName
+
+Write-Host "`n============================================================" -ForegroundColor Cyan
+Write-Host "🎉 SUCCESS! Your Desktop App Project is Fully Configured!" -ForegroundColor Green
+Write-Host "📁 Project Directory: $currentDir" -ForegroundColor Yellow
+Write-Host "============================================================" -ForegroundColor Cyan
