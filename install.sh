@@ -18,7 +18,7 @@ APP_NAME=${APP_NAME:-ZipLoot Desktop}
 read -p "Enter Bundle Identifier (default: app.ziploot.desktop): " APP_ID
 APP_ID=${APP_ID:-app.ziploot.desktop}
 
-echo -e "\n[1/3] Generating src-tauri/tauri.conf.json..."
+echo -e "\n[1/2] Generating src-tauri/tauri.conf.json..."
 
 cat <<EOF > src-tauri/tauri.conf.json
 {
@@ -53,25 +53,45 @@ cat <<EOF > src-tauri/tauri.conf.json
 }
 EOF
 
-echo "[2/3] Verifying build.rs script..."
+echo "[2/2] Verifying build.rs script..."
 cat <<EOF > src-tauri/build.rs
 fn main() {
     tauri_build::build();
 }
 EOF
 
-echo "[3/3] Auto-Initializing Git & Committing Project..."
-if [ ! -d ".git" ]; then
-    git init -q
+echo "------------------------------------------------------------"
+echo "Select Build Mode:"
+echo "  [1] Save Project Files Locally on PC (Offline Mode)"
+echo "  [2] Auto-Push to GitHub & Trigger Cloud .exe Build"
+read -p "Enter Choice [1 or 2] (default: 1): " MODE
+MODE=${MODE:-1}
+
+if [ "$MODE" = "2" ]; then
+    read -p "Enter your GitHub Email: " USER_EMAIL
+    read -p "Enter your GitHub Name/Username: " USER_NAME
+    read -p "Enter your GitHub Repository URL: " REPO_URL
+
+    if [ ! -d ".git" ]; then
+        git init -q
+    fi
+
+    if [ -n "$USER_EMAIL" ]; then git config user.email "$USER_EMAIL"; fi
+    if [ -n "$USER_NAME" ]; then git config user.name "$USER_NAME"; fi
+
+    git add .
+    git commit -m "Automated Tauri Build for ${APP_NAME} (${APP_URL})" -q
+
+    if [ -n "$REPO_URL" ]; then
+        git remote remove origin > /dev/null 2>&1
+        git remote add origin "$REPO_URL"
+        git push -u origin main
+        echo "============================================================"
+        echo "🎉 SUCCESS! Cloud Build Triggered on GitHub!"
+        echo "============================================================"
+    fi
+else
+    echo "============================================================"
+    echo "🎉 SUCCESS! Project Files Saved Locally on your PC!"
+    echo "============================================================"
 fi
-
-git add .
-git commit -m "Automated 1-Click Tauri Build for ${APP_NAME} (${APP_URL})" -q
-
-if git remote get-url origin > /dev/null 2>&1; then
-    git push origin main
-fi
-
-echo "============================================================"
-echo "🎉 SUCCESS! Your Desktop App Project is Fully Configured!"
-echo "============================================================"
