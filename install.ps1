@@ -62,6 +62,13 @@ if (-not (Test-Path ".git")) {
     git init -q
 }
 
+# Auto-set git fallback identity if missing
+$gitEmail = git config user.email 2>$null
+if (-not $gitEmail) {
+    git config user.email "developer@ziploot.app"
+    git config user.name "ZipLoot Developer"
+}
+
 git add .
 git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)" -q
 
