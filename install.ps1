@@ -57,14 +57,24 @@ Write-Host "[2/3] Verifying build.rs script..." -ForegroundColor Yellow
 $buildRsContent = 'fn main() { tauri_build::build(); }'
 Set-Content -Path "src-tauri/build.rs" -Value $buildRsContent -Encoding UTF8
 
-Write-Host "[3/3] Committing and Pushing to GitHub..." -ForegroundColor Yellow
-git add .
-git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)"
-git push origin main
-
-Write-Host "`n============================================================" -ForegroundColor Cyan
-Write-Host "🎉 SUCCESS! Cloud Build Triggered!" -ForegroundColor Green
-Write-Host "GitHub Actions is now compiling your $AppName .exe in Microsoft Cloud!" -ForegroundColor Yellow
-Write-Host "Track live build & download your .exe artifact here:" -ForegroundColor White
-Write-Host "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "[3/3] Checking Git Repository status..." -ForegroundColor Yellow
+if (Test-Path ".git") {
+    git add .
+    git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)"
+    git push origin main
+    Write-Host "`n============================================================" -ForegroundColor Cyan
+    Write-Host "🎉 SUCCESS! Cloud Build Triggered!" -ForegroundColor Green
+    Write-Host "GitHub Actions is now compiling your $AppName .exe in Microsoft Cloud!" -ForegroundColor Yellow
+    Write-Host "Track live build & download your .exe artifact here:" -ForegroundColor White
+    Write-Host "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+} else {
+    Write-Host "`n============================================================" -ForegroundColor Cyan
+    Write-Host "🎉 Project configured successfully!" -ForegroundColor Green
+    Write-Host "To trigger GitHub Actions build, push this folder to your GitHub repo:" -ForegroundColor Yellow
+    Write-Host "  git init" -ForegroundColor White
+    Write-Host "  git add ." -ForegroundColor White
+    Write-Host "  git commit -m 'Configure desktop build'" -ForegroundColor White
+    Write-Host "  git push -u origin main" -ForegroundColor White
+    Write-Host "============================================================" -ForegroundColor Cyan
+}
