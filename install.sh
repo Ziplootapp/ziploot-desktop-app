@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+cd "$(dirname "$0")"
+
 echo "============================================================"
 echo "   ZipLoot Web-to-Desktop App Builder (Tauri v2) Auto-Installer  "
 echo "============================================================"
