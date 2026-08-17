@@ -57,12 +57,22 @@ fn main() {
 }
 EOF
 
-git add .
-git commit -m "Automated 1-Click Tauri Build for ${APP_NAME} (${APP_URL})"
-git push origin main
-
-echo "============================================================"
-echo "🎉 SUCCESS! Cloud Build Triggered!"
-echo "Track live build & download your executable artifact here:"
-echo "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions"
-echo "============================================================"
+if [ -d ".git" ]; then
+    git add .
+    git commit -m "Automated 1-Click Tauri Build for ${APP_NAME} (${APP_URL})"
+    git push origin main
+    echo "============================================================"
+    echo "🎉 SUCCESS! Cloud Build Triggered!"
+    echo "Track live build & download your executable artifact here:"
+    echo "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions"
+    echo "============================================================"
+else
+    echo "============================================================"
+    echo "🎉 Project configured successfully!"
+    echo "To trigger GitHub Actions build, push this folder to your GitHub repo:"
+    echo "  git init"
+    echo "  git add ."
+    echo "  git commit -m 'Configure desktop build'"
+    echo "  git push -u origin main"
+    echo "============================================================"
+fi
