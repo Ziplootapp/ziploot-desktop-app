@@ -1,3 +1,5 @@
+Set-Location -Path $PSScriptRoot
+
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host "   ZipLoot Web-to-Desktop App Builder (Tauri v2) Auto-Installer  " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Cyan
