@@ -66,28 +66,33 @@ $mode = Read-Host "Enter Choice [1 or 2] (default: 1)"
 $currentDir = (Get-Item .).FullName
 
 if ($mode -eq "2") {
-    Write-Host "`n[GitHub Deployment Setup]" -ForegroundColor Yellow
-    $userEmail = Read-Host "Enter your GitHub Email"
-    $userName = Read-Host "Enter your GitHub Name/Username"
-    $repoUrl = Read-Host "Enter your GitHub Repository URL (e.g. https://github.com/username/repo.git)"
+    Write-Host "`n[GitHub PAT Token & Auto-Deploy Setup]" -ForegroundColor Yellow
+    $ghUser = Read-Host "Enter your GitHub Username"
+    $ghRepo = Read-Host "Enter your GitHub Repo Name (e.g. my-desktop-app)"
+    $ghPat  = Read-Host "Enter your GitHub PAT Token (ghp_xxxx...)"
 
     if (-not (Test-Path ".git")) {
         git init -q
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($userEmail)) { git config user.email "$userEmail" }
-    if (-not [string]::IsNullOrWhiteSpace($userName)) { git config user.name "$userName" }
+    if (-not [string]::IsNullOrWhiteSpace($ghUser)) {
+        git config user.name "$ghUser"
+        git config user.email "$ghUser@users.noreply.github.com"
+    }
 
     git add .
     git commit -m "Automated Tauri Build for $AppName ($AppUrl)" -q
 
-    if (-not [string]::IsNullOrWhiteSpace($repoUrl)) {
+    if (-not [string]::IsNullOrWhiteSpace($ghUser) -and -not [string]::IsNullOrWhiteSpace($ghRepo) -and -not [string]::IsNullOrWhiteSpace($ghPat)) {
+        $authUrl = "https://${ghPat}@github.com/${ghUser}/${ghRepo}.git"
         git remote remove origin 2>$null
-        git remote add origin "$repoUrl"
+        git remote add origin "$authUrl"
+        git branch -M main 2>$null
         git push -u origin main
         Write-Host "`n============================================================" -ForegroundColor Cyan
-        Write-Host "SUCCESS! Cloud Build Triggered!" -ForegroundColor Green
-        Write-Host "Track live build & download your .exe artifact on GitHub Actions!" -ForegroundColor Yellow
+        Write-Host "SUCCESS! Cloud Build Triggered on GitHub!" -ForegroundColor Green
+        Write-Host "Track live build & download your .exe artifact here:" -ForegroundColor Yellow
+        Write-Host "👉 https://github.com/$ghUser/$ghRepo/actions" -ForegroundColor White
         Write-Host "============================================================" -ForegroundColor Cyan
     } else {
         Write-Host "`n============================================================" -ForegroundColor Cyan
