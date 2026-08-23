@@ -69,12 +69,12 @@ Set-Content -Path "src-tauri/build.rs" -Value $buildRsContent -Encoding UTF8
 
 Write-Host "`n[3/3] GitHub Cloud Compilation Setup..." -ForegroundColor Yellow
 Write-Host "Choose how to push to your GitHub account for free .exe compilation:" -ForegroundColor Cyan
-Write-Host "  [1] Auto-Push using GitHub Personal Access Token (PAT)" -ForegroundColor White
+Write-Host "  [1] Auto-Create Repo & Push using GitHub Token (Fully Automated)" -ForegroundColor White
 Write-Host "  [2] Push using Existing Git Login / GitHub Desktop" -ForegroundColor White
 Write-Host "  [3] Skip Push (Local Configuration Only)" -ForegroundColor White
 
-$PushChoice = Read-Host "Select option [1, 2, or 3] (default: 2)"
-if ([string]::IsNullOrWhiteSpace($PushChoice)) { $PushChoice = "2" }
+$PushChoice = Read-Host "Select option [1, 2, or 3] (default: 1)"
+if ([string]::IsNullOrWhiteSpace($PushChoice)) { $PushChoice = "1" }
 
 if (-not (Test-Path ".git")) {
     git init | Out-Null
@@ -85,33 +85,81 @@ $PushSuccess = $false
 $ActionUrl = ""
 
 if ($PushChoice -eq "1") {
-    $GhUser = Read-Host "Enter your GitHub Username"
-    $GhRepo = Read-Host "Enter your GitHub Repository Name (e.g. my-desktop-app)"
     $GhToken = Read-Host "Enter your GitHub Personal Access Token (PAT)"
-    
-    if (-not [string]::IsNullOrWhiteSpace($GhUser) -and -not [string]::IsNullOrWhiteSpace($GhRepo) -and -not [string]::IsNullOrWhiteSpace($GhToken)) {
-        $RemoteUrl = "https://$($GhToken)@github.com/$($GhUser)/$($GhRepo).git"
-        git remote remove origin 2>$null
-        git remote add origin $RemoteUrl
-        git add .
-        git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)" | Out-Null
-        Write-Host "Pushing to https://github.com/$GhUser/$GhRepo..." -ForegroundColor Yellow
-        git push -u origin main --force
-        if ($LASTEXITCODE -eq 0) {
-            $PushSuccess = $true
-            $ActionUrl = "https://github.com/$GhUser/$GhRepo/actions"
+    if (-not [string]::IsNullOrWhiteSpace($GhToken)) {
+        $GhToken = $GhToken.Trim()
+        Write-Host "Verifying GitHub Token and fetching profile..." -ForegroundColor Yellow
+        $headers = @{
+            "Authorization" = "token $GhToken"
+            "Accept" = "application/vnd.github.v3+json"
+            "User-Agent" = "ZipLoot-Desktop-Builder"
+        }
+        
+        try {
+            $userProfile = Invoke-RestMethod -Uri "https://api.github.com/user" -Headers $headers -Method Get
+            $GhUser = $userProfile.login
+            Write-Host "[OK] Connected to GitHub as: $GhUser" -ForegroundColor Green
+            
+            # Default Repo Name auto-generated from App Name
+            $DefaultRepo = ($AppName.ToLower() -replace '[^a-z0-9-]', '-') + "-app"
+            $DefaultRepo = $DefaultRepo -replace '-+', '-'
+            $GhRepo = Read-Host "Enter Repository Name (default: $DefaultRepo)"
+            if ([string]::IsNullOrWhiteSpace($GhRepo)) { $GhRepo = $DefaultRepo }
+            $GhRepo = $GhRepo.Trim()
+            
+            # Auto-create repository on GitHub via API
+            Write-Host "Auto-creating repository '$GhRepo' on GitHub..." -ForegroundColor Yellow
+            $createBody = @{
+                name = $GhRepo
+                description = "$AppName Native Desktop App (Built with ZipLoot & Tauri)"
+                private = $false
+            } | ConvertTo-Json
+            
+            try {
+                Invoke-RestMethod -Uri "https://api.github.com/user/repos" -Method Post -Headers $headers -Body $createBody | Out-Null
+                Write-Host "[OK] Repository created at https://github.com/$GhUser/$GhRepo" -ForegroundColor Green
+            } catch {
+                Write-Host "[INFO] Repository already exists or ready to use." -ForegroundColor Gray
+            }
+            
+            $RemoteUrl = "https://$($GhToken)@github.com/$($GhUser)/$($GhRepo).git"
+            git remote remove origin 2>$null
+            git remote add origin $RemoteUrl
+            git add .
+            git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)" 2>$null | Out-Null
+            Write-Host "Pushing code to https://github.com/$GhUser/$GhRepo..." -ForegroundColor Yellow
+            git push -u origin main --force
+            if ($LASTEXITCODE -eq 0) {
+                $PushSuccess = $true
+                $ActionUrl = "https://github.com/$GhUser/$GhRepo/actions"
+            }
+        } catch {
+            Write-Host "❌ GitHub Token Authentication Error: $($_.Exception.Message)" -ForegroundColor Red
         }
     }
 }
 elseif ($PushChoice -eq "2") {
-    $RemoteUrl = Read-Host "Enter your GitHub Repository URL (or press Enter to use current remote)"
-    if (-not [string]::IsNullOrWhiteSpace($RemoteUrl)) {
-        git remote remove origin 2>$null
-        git remote add origin $RemoteUrl
+    $CurrentRemote = git config --get remote.origin.url
+    if (-not [string]::IsNullOrWhiteSpace($CurrentRemote)) {
+        Write-Host "Detected Git Remote: $CurrentRemote" -ForegroundColor Green
+        $UseCurrent = Read-Host "Push to this remote? [Y/n] (default: Y)"
+        if ($UseCurrent.ToLower() -eq "n") {
+            $RemoteUrl = Read-Host "Enter new GitHub Repository URL"
+            if (-not [string]::IsNullOrWhiteSpace($RemoteUrl)) {
+                git remote remove origin 2>$null
+                git remote add origin $RemoteUrl.Trim()
+            }
+        }
+    } else {
+        $RemoteUrl = Read-Host "Enter your GitHub Repository URL"
+        if (-not [string]::IsNullOrWhiteSpace($RemoteUrl)) {
+            git remote remove origin 2>$null
+            git remote add origin $RemoteUrl.Trim()
+        }
     }
     
     git add .
-    git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)" | Out-Null
+    git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)" 2>$null | Out-Null
     Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
     git push -u origin main
     if ($LASTEXITCODE -eq 0) {
@@ -133,9 +181,9 @@ if ($PushSuccess) {
     }
 } else {
     if ($PushChoice -ne "3") {
-        Write-Host "⚠️ Git push was not completed (e.g. authentication or repository not created on GitHub yet)." -ForegroundColor Yellow
+        Write-Host "⚠️ Git push was not completed." -ForegroundColor Yellow
     }
-    Write-Host "All build files (tauri.conf.json, build.rs, GitHub Action) are generated locally!" -ForegroundColor Green
+    Write-Host "All build files are generated locally!" -ForegroundColor Green
     Write-Host "`nTo push manually to your own GitHub repo:" -ForegroundColor White
     Write-Host "  1. Create an empty repo on GitHub: https://github.com/new" -ForegroundColor Gray
     Write-Host "  2. Run in terminal:" -ForegroundColor Gray
