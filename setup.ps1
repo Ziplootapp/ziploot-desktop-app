@@ -28,6 +28,7 @@ if (-not ($AppId -match '^[a-zA-Z0-9.-]+$')) { $AppId = "app.ziploot.desktop" }
 
 Write-Host "`n[1/3] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
 
+$cleanTitle = "$AppName - Desktop App"
 $jsonContent = @"
 {
   "`$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
@@ -40,7 +41,7 @@ $jsonContent = @"
   "app": {
     "windows": [
       {
-        "title": "$AppName — Native Desktop App",
+        "title": "$cleanTitle",
         "url": "$AppUrl",
         "width": 1440,
         "height": 900,
@@ -61,11 +62,12 @@ $jsonContent = @"
 }
 "@
 
-Set-Content -Path "src-tauri/tauri.conf.json" -Value $jsonContent -Encoding UTF8
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText("$PSScriptRoot/src-tauri/tauri.conf.json", $jsonContent, $utf8NoBom)
 
 Write-Host "[2/3] Verifying build.rs script..." -ForegroundColor Yellow
 $buildRsContent = 'fn main() { tauri_build::build(); }'
-Set-Content -Path "src-tauri/build.rs" -Value $buildRsContent -Encoding UTF8
+[System.IO.File]::WriteAllText("$PSScriptRoot/src-tauri/build.rs", $buildRsContent, $utf8NoBom)
 
 Write-Host "`n[3/3] GitHub Cloud Compilation Setup..." -ForegroundColor Yellow
 Write-Host "Choose how to push to your GitHub account for free .exe compilation:" -ForegroundColor Cyan
