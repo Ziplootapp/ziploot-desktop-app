@@ -15,8 +15,10 @@ if ([string]::IsNullOrWhiteSpace($AppName)) { $AppName = "ZipLoot Desktop" }
 
 $AppId = Read-Host "Enter Bundle Identifier (default: app.ziploot.desktop)"
 if ([string]::IsNullOrWhiteSpace($AppId)) { $AppId = "app.ziploot.desktop" }
+$AppId = $AppId -replace '[^a-zA-Z0-9.-]', ''
+if (-not ($AppId -match '^[a-zA-Z0-9.-]+$')) { $AppId = "app.ziploot.desktop" }
 
-Write-Host "`n[1/2] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
+Write-Host "`n[1/3] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
 
 $jsonContent = @"
 {
@@ -53,58 +55,28 @@ $jsonContent = @"
 
 Set-Content -Path "src-tauri/tauri.conf.json" -Value $jsonContent -Encoding UTF8
 
-Write-Host "[2/2] Verifying build.rs script..." -ForegroundColor Yellow
+Write-Host "[2/3] Verifying build.rs script..." -ForegroundColor Yellow
 $buildRsContent = 'fn main() { tauri_build::build(); }'
 Set-Content -Path "src-tauri/build.rs" -Value $buildRsContent -Encoding UTF8
 
-Write-Host "`n------------------------------------------------------------" -ForegroundColor Cyan
-Write-Host "Select Build Mode:" -ForegroundColor Yellow
-Write-Host "  [1] Save Project Files Locally on PC (Offline Mode)" -ForegroundColor White
-Write-Host "  [2] Auto-Push to GitHub & Trigger Cloud .exe Build" -ForegroundColor White
-$mode = Read-Host "Enter Choice [1 or 2] (default: 1)"
-
-$currentDir = (Get-Item .).FullName
-
-if ($mode -eq "2") {
-    Write-Host "`n[GitHub PAT Token & Auto-Deploy Setup]" -ForegroundColor Yellow
-    $ghUser = Read-Host "Enter your GitHub Username"
-    $ghRepo = Read-Host "Enter your GitHub Repo Name (e.g. my-desktop-app)"
-    $ghPat  = Read-Host "Enter your GitHub Personal Access Token (PAT) or Password"
-
-    if (-not (Test-Path ".git")) {
-        git init -q
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($ghUser)) {
-        git config user.name "$ghUser"
-        git config user.email "$ghUser@users.noreply.github.com"
-    }
-
+Write-Host "[3/3] Checking Git Repository status..." -ForegroundColor Yellow
+if (Test-Path ".git") {
     git add .
-    git commit -m "Automated Tauri Build for $AppName ($AppUrl)" -q
-
-    if (-not [string]::IsNullOrWhiteSpace($ghUser) -and -not [string]::IsNullOrWhiteSpace($ghRepo) -and -not [string]::IsNullOrWhiteSpace($ghPat)) {
-        $authUrl = "https://${ghPat}@github.com/${ghUser}/${ghRepo}.git"
-        git remote remove origin 2>$null
-        git remote add origin "$authUrl"
-        git branch -M main 2>$null
-        git push -u origin main
-        Write-Host "`n============================================================" -ForegroundColor Cyan
-        Write-Host "SUCCESS! Cloud Build Triggered on GitHub!" -ForegroundColor Green
-        Write-Host "Track live build & download your .exe artifact here:" -ForegroundColor Yellow
-        Write-Host "👉 https://github.com/$ghUser/$ghRepo/actions" -ForegroundColor White
-        Write-Host "============================================================" -ForegroundColor Cyan
-    } else {
-        Write-Host "`n============================================================" -ForegroundColor Cyan
-        Write-Host "SUCCESS! Local Git Commit Prepared!" -ForegroundColor Green
-        Write-Host "Project Directory: $currentDir" -ForegroundColor Yellow
-        Write-Host "============================================================" -ForegroundColor Cyan
-    }
+    git commit -m "Automated 1-Click Tauri Build for $AppName ($AppUrl)"
+    git push origin main
+    Write-Host "`n============================================================" -ForegroundColor Cyan
+    Write-Host "🎉 SUCCESS! Cloud Build Triggered!" -ForegroundColor Green
+    Write-Host "GitHub Actions is now compiling your $AppName .exe in Microsoft Cloud!" -ForegroundColor Yellow
+    Write-Host "Track live build & download your .exe artifact here:" -ForegroundColor White
+    Write-Host "👉 https://github.com/Ziplootapp/ziploot-desktop-app/actions" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
 } else {
     Write-Host "`n============================================================" -ForegroundColor Cyan
-    Write-Host "SUCCESS! Project Files Saved Locally on your PC!" -ForegroundColor Green
-    Write-Host "Project Directory: $currentDir" -ForegroundColor Yellow
+    Write-Host "🎉 Project configured successfully!" -ForegroundColor Green
+    Write-Host "To trigger GitHub Actions build, push this folder to your GitHub repo:" -ForegroundColor Yellow
+    Write-Host "  git init" -ForegroundColor White
+    Write-Host "  git add ." -ForegroundColor White
+    Write-Host "  git commit -m 'Configure desktop build'" -ForegroundColor White
+    Write-Host "  git push -u origin main" -ForegroundColor White
     Write-Host "============================================================" -ForegroundColor Cyan
 }
-
-explorer.exe $currentDir
