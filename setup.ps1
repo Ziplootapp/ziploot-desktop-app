@@ -13,6 +13,8 @@ if ([string]::IsNullOrWhiteSpace($AppName)) { $AppName = "ZipLoot Desktop" }
 
 $AppId = Read-Host "Enter Bundle Identifier (default: app.ziploot.desktop)"
 if ([string]::IsNullOrWhiteSpace($AppId)) { $AppId = "app.ziploot.desktop" }
+$AppId = $AppId -replace '[^a-zA-Z0-9.-]', ''
+if (-not ($AppId -match '^[a-zA-Z0-9.-]+$')) { $AppId = "app.ziploot.desktop" }
 
 Write-Host "`n[1/4] Generating src-tauri/tauri.conf.json..." -ForegroundColor Yellow
 
